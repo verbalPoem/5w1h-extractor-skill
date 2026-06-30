@@ -1,0 +1,4 @@
+interface:
+  display_name: "5W1H Hypergraph Extractor"
+  short_description: "Build center-event 5W1H hypergraph frames."
+  default_prompt: "Use $5w1h-extractor to extract center-event 5W1H hypergraph JSON from this text."

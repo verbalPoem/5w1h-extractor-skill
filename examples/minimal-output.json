@@ -1,0 +1,65 @@
+{
+  "schema_version": "event-5w1h-hypergraph-v1",
+  "text": "美国国务院公开细节。",
+  "sentences": {
+    "S1": {
+      "text": "美国国务院公开细节。",
+      "tag_start": 0,
+      "tag_end": 10
+    }
+  },
+  "nodes": [
+    {
+      "id": "N1",
+      "text": "美国国务院",
+      "node_type": "who",
+      "entity_type": "ORG",
+      "tag_start": 0,
+      "tag_end": 5,
+      "evidence": [
+        "S1"
+      ],
+      "confidence": 0.95
+    },
+    {
+      "id": "N2",
+      "text": "细节",
+      "node_type": "what",
+      "entity_type": "CLAIM",
+      "tag_start": 7,
+      "tag_end": 9,
+      "evidence": [
+        "S1"
+      ],
+      "confidence": 0.9
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "HE1",
+      "event_type": "disclosure",
+      "trigger": {
+        "text": "公开",
+        "tag_start": 5,
+        "tag_end": 7
+      },
+      "summary": "美国国务院公开细节。",
+      "nodes": {
+        "who": [
+          "N1"
+        ],
+        "what": [
+          "N2"
+        ],
+        "when": [],
+        "where": [],
+        "why": [],
+        "how": []
+      },
+      "evidence": [
+        "S1"
+      ],
+      "confidence": 0.92
+    }
+  ]
+}
