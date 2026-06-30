@@ -9,16 +9,17 @@ Core idea:
 ```text
 one center event = one hyperedge
 Who / What / When / Where / Why / How = nodes connected by that hyperedge
+S1 / S2 = evidence sentence IDs
+N1 / N2 = 5W1H node IDs
 ```
 
 Default output:
 
 ```json
 {
-  "schema_version": "event-5w1h-hypergraph-v1",
-  "text": "original input text",
+  "schema_version": "event-5w1h-hypergraph-v3",
   "sentences": {},
-  "nodes": [],
+  "nodes": {},
   "hyperedges": []
 }
 ```
@@ -26,32 +27,32 @@ Default output:
 ## Features
 
 - Center-event first: identify the essential event or center claim before extracting 5W1H.
-- Event as hyperedge: each event is represented as one hyperedge.
-- 5W1H as nodes: `who`, `what`, `when`, `where`, `why`, and `how` are nodes connected to the event hyperedge.
-- Span offsets: every normal node includes `tag_start` and `tag_end`.
-- Evidence traceability: nodes and hyperedges can point back to source sentences.
-- Skill-guided extraction: a finite-state controller and Trigger/Action micro-skill library reduce noisy side-event extraction.
+- Event as hyperedge: each center event is represented as one `hyperedge`.
+- 5W1H as nodes: `who`, `what`, `when`, `where`, `why`, and `how` are node groups.
+- Indexed traceability: `S1/S2` preserve sentence evidence, and `N1/N2` preserve node references.
+- Span offsets: normal nodes and triggers include `tag_start` and `tag_end`.
+- Noise control: a finite-state controller and Trigger/Action micro-skill library reduce side-event extraction.
 
 ## Repository Layout
 
 ```text
 .
-├── 5w1h-extractor/          # installable Codex skill
-│   ├── SKILL.md
-│   ├── agents/
-│   ├── references/
-│   └── scripts/
-├── examples/
-│   └── minimal-output.json
-├── prompts/
-│   ├── install-with-ai.zh.md
-│   └── install-with-ai.en.md
-├── docs/
-│   ├── INSTALL.md
-│   └── INSTALL.en.md
-├── README.md
-├── README.en.md
-└── LICENSE
+|-- 5w1h-extractor/          # installable Codex skill
+|   |-- SKILL.md
+|   |-- agents/
+|   |-- references/
+|   `-- scripts/
+|-- examples/
+|   `-- minimal-output.json
+|-- prompts/
+|   |-- install-with-ai.zh.md
+|   `-- install-with-ai.en.md
+|-- docs/
+|   |-- INSTALL.md
+|   `-- INSTALL.en.md
+|-- README.md
+|-- README.en.md
+`-- LICENSE
 ```
 
 The installable skill is the `5w1h-extractor/` folder.
@@ -87,18 +88,31 @@ If you are using Codex, Claude Code, Cursor, Trae, or another coding agent that 
 
 ## Output Example
 
-Node:
+Sentence index:
 
 ```json
 {
-  "id": "N1",
-  "text": "U.S. Department of State",
-  "node_type": "who",
-  "entity_type": "ORG",
-  "tag_start": 0,
-  "tag_end": 24,
-  "evidence": ["S1"],
-  "confidence": 0.95
+  "S1": {
+    "text": "U.S. State Department disclosed nuclear delivery system details on Dec. 1.",
+    "tag_start": 0,
+    "tag_end": 74
+  }
+}
+```
+
+Node index:
+
+```json
+{
+  "N1": {
+    "node_type": "who",
+    "text": "U.S. State Department",
+    "entity_type": "ORG",
+    "tag_start": 0,
+    "tag_end": 21,
+    "evidence": ["S1"],
+    "confidence": 0.95
+  }
 }
 ```
 
@@ -110,19 +124,20 @@ Event hyperedge:
   "event_type": "disclosure",
   "trigger": {
     "text": "disclosed",
-    "tag_start": 25,
-    "tag_end": 34
+    "tag_start": 22,
+    "tag_end": 31
   },
-  "summary": "The U.S. Department of State disclosed system details.",
+  "summary": "U.S. State Department disclosed nuclear delivery system details on Dec. 1.",
   "nodes": {
     "who": ["N1"],
     "what": ["N2"],
-    "when": [],
+    "when": ["N3"],
     "where": [],
     "why": [],
     "how": []
   },
   "evidence": ["S1"],
+  "missing": ["where", "why", "how"],
   "confidence": 0.92
 }
 ```
@@ -138,7 +153,7 @@ python 5w1h-extractor/scripts/validate_output.py examples/minimal-output.json
 Expected:
 
 ```text
-VALID: 2 node(s), 1 hyperedge(s)
+VALID: 1 sentence(s), 3 node(s), 1 hyperedge(s)
 ```
 
 ## License

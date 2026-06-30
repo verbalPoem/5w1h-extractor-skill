@@ -1,64 +1,61 @@
 {
-  "schema_version": "event-5w1h-hypergraph-v1",
-  "text": "美国国务院公开细节。",
+  "schema_version": "event-5w1h-hypergraph-v3",
   "sentences": {
     "S1": {
-      "text": "美国国务院公开细节。",
+      "text": "U.S. State Department disclosed nuclear delivery system details on Dec. 1.",
       "tag_start": 0,
-      "tag_end": 10
+      "tag_end": 74
     }
   },
-  "nodes": [
-    {
-      "id": "N1",
-      "text": "美国国务院",
+  "nodes": {
+    "N1": {
       "node_type": "who",
+      "text": "U.S. State Department",
       "entity_type": "ORG",
       "tag_start": 0,
-      "tag_end": 5,
-      "evidence": [
-        "S1"
-      ],
+      "tag_end": 21,
+      "evidence": ["S1"],
       "confidence": 0.95
     },
-    {
-      "id": "N2",
-      "text": "细节",
+    "N2": {
       "node_type": "what",
+      "text": "nuclear delivery system details",
       "entity_type": "CLAIM",
-      "tag_start": 7,
-      "tag_end": 9,
-      "evidence": [
-        "S1"
-      ],
+      "tag_start": 32,
+      "tag_end": 63,
+      "evidence": ["S1"],
+      "confidence": 0.92
+    },
+    "N3": {
+      "node_type": "when",
+      "text": "Dec. 1",
+      "entity_type": "TIME",
+      "tag_start": 67,
+      "tag_end": 73,
+      "evidence": ["S1"],
       "confidence": 0.9
     }
-  ],
+  },
   "hyperedges": [
     {
       "id": "HE1",
       "event_type": "disclosure",
       "trigger": {
-        "text": "公开",
-        "tag_start": 5,
-        "tag_end": 7
+        "text": "disclosed",
+        "tag_start": 22,
+        "tag_end": 31
       },
-      "summary": "美国国务院公开细节。",
+      "summary": "U.S. State Department disclosed nuclear delivery system details on Dec. 1.",
       "nodes": {
-        "who": [
-          "N1"
-        ],
-        "what": [
-          "N2"
-        ],
-        "when": [],
+        "who": ["N1"],
+        "what": ["N2"],
+        "when": ["N3"],
         "where": [],
         "why": [],
         "how": []
       },
-      "evidence": [
-        "S1"
-      ],
+      "evidence": ["S1"],
+      "missing": ["where", "why", "how"],
       "confidence": 0.92
     }
   ]

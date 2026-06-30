@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Event-5W1H hypergraph JSON.
+"""Validate indexed Event-5W1H hypergraph JSON.
 
 Usage:
   python validate_output.py output.json
@@ -9,23 +9,15 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
 
 
-SCHEMA_VERSION = "event-5w1h-hypergraph-v1"
-NODE_TYPES = ("who", "what", "when", "where", "why", "how")
-REQUIRED_NODE_KEYS = (
-    "id",
-    "text",
-    "node_type",
-    "entity_type",
-    "tag_start",
-    "tag_end",
-    "evidence",
-    "confidence",
-)
+SCHEMA_VERSION = "event-5w1h-hypergraph-v3"
+NODE_GROUPS = ("who", "what", "when", "where", "why", "how")
+REQUIRED_NODE_KEYS = ("node_type", "text", "entity_type", "tag_start", "tag_end", "evidence", "confidence")
 
 
 def fail(message: str) -> None:
@@ -59,33 +51,42 @@ def validate_offset(value: Any, path: str) -> None:
         fail(f"{path} must be a non-negative integer or null")
 
 
-def validate_node(node: Any, idx: int, original_text: str | None) -> str:
-    path = f"nodes[{idx}]"
-    obj = require_dict(node, path)
-    for key in REQUIRED_NODE_KEYS:
+def validate_sentence(sentence_id: str, sentence: Any) -> None:
+    if not re.fullmatch(r"S[1-9][0-9]*", sentence_id):
+        fail(f"invalid sentence id {sentence_id}")
+    obj = require_dict(sentence, f"sentences.{sentence_id}")
+    for key in ("text", "tag_start", "tag_end"):
         if key not in obj:
-            fail(f"{path}.{key} is required")
-    if obj["node_type"] not in NODE_TYPES:
-        fail(f"{path}.node_type must be one of {', '.join(NODE_TYPES)}")
-    validate_offset(obj["tag_start"], f"{path}.tag_start")
-    validate_offset(obj["tag_end"], f"{path}.tag_end")
-    require_list(obj["evidence"], f"{path}.evidence")
-
+            fail(f"sentences.{sentence_id}.{key} is required")
+    validate_offset(obj["tag_start"], f"sentences.{sentence_id}.tag_start")
+    validate_offset(obj["tag_end"], f"sentences.{sentence_id}.tag_end")
     start = obj["tag_start"]
     end = obj["tag_end"]
-    text = obj["text"]
-    if start is not None and end is not None:
-        if end < start:
-            fail(f"{path}.tag_end must be >= tag_start")
-        if original_text is not None:
-            if end > len(original_text):
-                fail(f"{path}.tag_end exceeds text length")
-            if original_text[start:end] != text:
-                fail(f"{path}.text does not match text[tag_start:tag_end]")
-    return str(obj["id"])
+    if start is not None and end is not None and end < start:
+        fail(f"sentences.{sentence_id}.tag_end must be >= tag_start")
 
 
-def validate_trigger(trigger: Any, path: str, original_text: str | None) -> None:
+def validate_node(node_id: str, node: Any, sentence_ids: set[str]) -> None:
+    if not re.fullmatch(r"N[1-9][0-9]*", node_id):
+        fail(f"invalid node id {node_id}")
+    obj = require_dict(node, f"nodes.{node_id}")
+    for key in REQUIRED_NODE_KEYS:
+        if key not in obj:
+            fail(f"nodes.{node_id}.{key} is required")
+    if obj["node_type"] not in NODE_GROUPS:
+        fail(f"nodes.{node_id}.node_type must be one of {', '.join(NODE_GROUPS)}")
+    validate_offset(obj["tag_start"], f"nodes.{node_id}.tag_start")
+    validate_offset(obj["tag_end"], f"nodes.{node_id}.tag_end")
+    start = obj["tag_start"]
+    end = obj["tag_end"]
+    if start is not None and end is not None and end < start:
+        fail(f"nodes.{node_id}.tag_end must be >= tag_start")
+    for ev in require_list(obj["evidence"], f"nodes.{node_id}.evidence"):
+        if ev not in sentence_ids:
+            fail(f"nodes.{node_id}.evidence references unknown sentence id {ev}")
+
+
+def validate_trigger(trigger: Any, path: str) -> None:
     obj = require_dict(trigger, path)
     for key in ("text", "tag_start", "tag_end"):
         if key not in obj:
@@ -94,33 +95,28 @@ def validate_trigger(trigger: Any, path: str, original_text: str | None) -> None
     validate_offset(obj["tag_end"], f"{path}.tag_end")
     start = obj["tag_start"]
     end = obj["tag_end"]
-    if start is not None and end is not None:
-        if end < start:
-            fail(f"{path}.tag_end must be >= tag_start")
-        if original_text is not None:
-            if end > len(original_text):
-                fail(f"{path}.tag_end exceeds text length")
-            if original_text[start:end] != obj["text"]:
-                fail(f"{path}.text does not match text[tag_start:tag_end]")
+    if start is not None and end is not None and end < start:
+        fail(f"{path}.tag_end must be >= tag_start")
 
 
-def validate_hyperedge(edge: Any, idx: int, node_ids: set[str], original_text: str | None) -> None:
+def validate_hyperedge(edge: Any, idx: int, node_ids: set[str], sentence_ids: set[str]) -> None:
     path = f"hyperedges[{idx}]"
     obj = require_dict(edge, path)
-    for key in ("id", "event_type", "trigger", "summary", "nodes", "evidence", "confidence"):
+    for key in ("id", "event_type", "trigger", "summary", "nodes", "evidence", "missing", "confidence"):
         if key not in obj:
             fail(f"{path}.{key} is required")
-    validate_trigger(obj["trigger"], f"{path}.trigger", original_text)
-    require_list(obj["evidence"], f"{path}.evidence")
-
+    validate_trigger(obj["trigger"], f"{path}.trigger")
     nodes = require_dict(obj["nodes"], f"{path}.nodes")
-    for node_type in NODE_TYPES:
-        if node_type not in nodes:
-            fail(f"{path}.nodes.{node_type} is required")
-        refs = require_list(nodes[node_type], f"{path}.nodes.{node_type}")
-        for ref in refs:
-            if str(ref) not in node_ids:
-                fail(f"{path}.nodes.{node_type} references unknown node id {ref}")
+    for group in NODE_GROUPS:
+        if group not in nodes:
+            fail(f"{path}.nodes.{group} is required")
+        for ref in require_list(nodes[group], f"{path}.nodes.{group}"):
+            if ref not in node_ids:
+                fail(f"{path}.nodes.{group} references unknown node id {ref}")
+    for ev in require_list(obj["evidence"], f"{path}.evidence"):
+        if ev not in sentence_ids:
+            fail(f"{path}.evidence references unknown sentence id {ev}")
+    require_list(obj["missing"], f"{path}.missing")
 
 
 def main() -> None:
@@ -129,28 +125,21 @@ def main() -> None:
     data = require_dict(load_json(sys.argv[1]), "$")
     if data.get("schema_version") != SCHEMA_VERSION:
         fail(f"schema_version must be {SCHEMA_VERSION}")
-
-    original_text = data.get("text")
-    if original_text is not None and not isinstance(original_text, str):
-        fail("text must be a string when present")
-
-    require_dict(data.get("sentences", {}), "sentences")
-    nodes = require_list(data.get("nodes"), "nodes")
+    sentences = require_dict(data.get("sentences"), "sentences")
+    nodes = require_dict(data.get("nodes"), "nodes")
     hyperedges = require_list(data.get("hyperedges"), "hyperedges")
     if not hyperedges:
         fail("hyperedges must not be empty")
 
-    node_ids: set[str] = set()
-    for idx, node in enumerate(nodes):
-        node_id = validate_node(node, idx, original_text)
-        if node_id in node_ids:
-            fail(f"duplicate node id {node_id}")
-        node_ids.add(node_id)
-
+    sentence_ids = set(sentences.keys())
+    node_ids = set(nodes.keys())
+    for sentence_id, sentence in sentences.items():
+        validate_sentence(sentence_id, sentence)
+    for node_id, node in nodes.items():
+        validate_node(node_id, node, sentence_ids)
     for idx, edge in enumerate(hyperedges):
-        validate_hyperedge(edge, idx, node_ids, original_text)
-
-    print(f"VALID: {len(nodes)} node(s), {len(hyperedges)} hyperedge(s)")
+        validate_hyperedge(edge, idx, node_ids, sentence_ids)
+    print(f"VALID: {len(sentences)} sentence(s), {len(nodes)} node(s), {len(hyperedges)} hyperedge(s)")
 
 
 if __name__ == "__main__":

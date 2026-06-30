@@ -4,7 +4,7 @@
 
 Extract one hyperedge for one essential event or claim. A hyperedge is not a paragraph summary and not a list of every interesting fact.
 
-Accept a candidate role only when it:
+Accept a candidate node only when it:
 
 - Is an argument of the main trigger.
 - Modifies the main event's time, place, cause, purpose, or method.
@@ -36,7 +36,7 @@ Weak signals that should not split by themselves:
 - Historical background.
 - Follow-up comments from the same actor.
 
-## Military News Roles
+## Military News Node Types
 
 - `who`: country, ministry, company, military service, commander, platform, unit, source.
 - `what`: weapon system, platform, quantity, capability, test, deployment, construction, disclosure, claim.
@@ -83,7 +83,7 @@ For `can`, `able to`, `main advantage`, `designed to`, and similar phrases:
 
 ## Hypergraph Projection
 
-Use 5W1H fields as role-labeled arguments of one event hyperedge.
+Use 5W1H node groups as indexed arguments of one event hyperedge.
 
 Default hyperedge:
 

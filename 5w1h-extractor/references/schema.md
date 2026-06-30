@@ -1,78 +1,73 @@
 # Event-5W1H Hypergraph Schema
 
-Use this schema by default.
+Use this indexed schema by default.
 
 ```json
 {
-  "schema_version": "event-5w1h-hypergraph-v1",
-  "text": "original input text",
+  "schema_version": "event-5w1h-hypergraph-v3",
   "sentences": {},
-  "nodes": [],
+  "nodes": {},
   "hyperedges": []
 }
 ```
 
 ## Meaning
 
-- `nodes`: extracted 5W1H nodes.
-- `hyperedges`: event hyperedges.
-- `hyperedges[].nodes`: the 5W1H nodes connected by that event hyperedge.
-
-One event equals one hyperedge. The 5W1H fillers are nodes connected by that hyperedge.
+- One center event equals one hyperedge.
+- `sentences` stores evidence sentences as `S1`, `S2`, ...
+- `nodes` stores 5W1H nodes as `N1`, `N2`, ...
+- `hyperedges[].nodes` connects each 5W1H group to node IDs.
 
 ```text
-HE1 = event(trigger, who_nodes, what_nodes, when_nodes, where_nodes, why_nodes, how_nodes)
+HE1 = event(trigger, who[N*], what[N*], when[N*], where[N*], why[N*], how[N*])
 ```
 
-## Top-Level Fields
+## Sentence Object
 
 ```json
 {
-  "schema_version": "event-5w1h-hypergraph-v1",
-  "text": "original input text",
-  "sentences": {
-    "S1": {
-      "text": "source sentence",
-      "tag_start": 0,
-      "tag_end": 20
-    }
-  },
-  "nodes": [],
-  "hyperedges": []
-}
-```
-
-`text` should preserve the original input used for offset calculation. If the input is too long and the user did not ask for the full text, `text` may be omitted only when every node still has reliable offsets relative to the provided text chunk.
-
-## Node Object
-
-Each extracted 5W1H span becomes one node.
-
-```json
-{
-  "id": "N1",
-  "text": "source span",
-  "node_type": "who|what|when|where|why|how",
-  "entity_type": "ORG|PERSON|COUNTRY|WEAPON|SYSTEM|PLATFORM|TIME|PLACE|CAUSE|PURPOSE|METHOD|CAPABILITY|CLAIM|QUANTITY|OTHER",
-  "tag_start": 0,
-  "tag_end": 0,
-  "evidence": ["S1"],
-  "confidence": 0.0
+  "S1": {
+    "text": "source sentence",
+    "tag_start": 0,
+    "tag_end": 20
+  }
 }
 ```
 
 Rules:
 
+- Sentence IDs must be stable and compact: `S1`, `S2`, ...
+- `tag_start` and `tag_end` are offsets in the original user-provided text.
+- Keep sentences only when they support at least one node or hyperedge.
+
+## Node Object
+
+`nodes` is an object keyed by node ID:
+
+```json
+{
+  "N1": {
+    "node_type": "who|what|when|where|why|how",
+    "text": "source span",
+    "entity_type": "ORG|PERSON|COUNTRY|WEAPON|SYSTEM|PLATFORM|TIME|PLACE|CAUSE|PURPOSE|METHOD|CAPABILITY|CLAIM|QUANTITY|OTHER",
+    "tag_start": 0,
+    "tag_end": 0,
+    "evidence": ["S1"],
+    "confidence": 0.0
+  }
+}
+```
+
+Rules:
+
+- Node IDs must be stable and compact: `N1`, `N2`, ...
 - `node_type` must be one of `who`, `what`, `when`, `where`, `why`, `how`.
-- `tag_start` is the zero-based character offset of the first character in `text`.
+- `tag_start` is the zero-based character offset of the first character in the original input text.
 - `tag_end` is the zero-based exclusive end offset.
-- `text == original_text[tag_start:tag_end]` should hold whenever offsets are available.
+- `evidence` must reference sentence IDs from `sentences`.
 - Use `null` for `tag_start` and `tag_end` only when exact offsets cannot be recovered.
-- Do not create nodes for side events.
 
 ## Hyperedge Object
-
-Each center event becomes one hyperedge.
 
 ```json
 {
@@ -90,37 +85,26 @@ Each center event becomes one hyperedge.
     "when": ["N3"],
     "where": [],
     "why": [],
-    "how": ["N4"]
+    "how": []
   },
   "evidence": ["S1"],
+  "missing": [],
   "confidence": 0.0
 }
 ```
 
 Rules:
 
-- Use `nodes`, not `roles`, for the 5W1H connections inside a hyperedge.
-- Each ID in `hyperedges[].nodes.*` must exist in top-level `nodes`.
-- The same node may connect to multiple hyperedges only when the source text truly reuses the same 5W1H filler for multiple independent events.
+- Use `nodes` as the only field name for 5W1H connections.
+- Values inside `hyperedges[].nodes.*` must be node IDs from top-level `nodes`.
+- `hyperedges[].evidence` must reference sentence IDs from `sentences`.
 - Empty 5W1H groups must be `[]`.
-- Do not put explanatory labels or role schemas in output.
+- List missing 5W1H groups in `missing`.
 
-## Optional Metadata
+## Readability Rules
 
-Use these fields only when useful:
-
-```json
-{
-  "document_id": "D1",
-  "discarded": [
-    {
-      "text": "side event span",
-      "reason": "side_event|background|unsupported|wrong_event",
-      "tag_start": 0,
-      "tag_end": 0
-    }
-  ]
-}
-```
-
-Keep optional metadata short. The core output is `nodes + hyperedges`.
+- Keep `sentences` short: only evidence sentences, not the whole document split into every possible fragment.
+- Keep `nodes` grouped by compact IDs, not as a long array with repeated `id` fields.
+- Merge long inventories into grouped `what` nodes when possible.
+- Do not output explanatory labels, auxiliary schemas, or graph-database tables by default.
+- Do not create side-event hyperedges unless the text contains independent snippets.

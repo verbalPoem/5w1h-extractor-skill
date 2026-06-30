@@ -1,6 +1,6 @@
 # Event-5W1H-HG Finite-State Controller
 
-Use this controller for every non-trivial extraction. The goal is to construct event hyperedges that connect 5W1H nodes.
+Use this controller for every non-trivial extraction. The goal is to construct readable event hyperedges with indexed 5W1H nodes and sentence evidence.
 
 ```text
 S0_SEGMENT
@@ -50,7 +50,7 @@ Do not attach time, place, reason, or method yet.
 
 ### S3_NODE_EXTRACT
 
-Extract 5W1H spans as nodes. Every normal node must have `tag_start` and `tag_end`.
+Extract 5W1H spans as indexed nodes. Every normal node must have `tag_start`, `tag_end`, and evidence sentence IDs.
 
 Attach a node only if it passes the center-lock test:
 
@@ -79,14 +79,14 @@ Project the accepted event frame into one event hyperedge:
 HE(event, who, what, when, where, why, how)
 ```
 
-Keep one hyperedge per center event. Use `hyperedges[].nodes`, not `roles`, to connect the six 5W1H node groups.
+Keep one hyperedge per center event. Use `hyperedges[].nodes` with node ID references such as `N1`, `N2`.
 
 ### S6_VALIDATE
 
 Run quality checks:
 
 - exactly one center event per hyperedge
-- every node has evidence
+- every node has source support, offsets, and evidence IDs
 - every normal node has `tag_start` and `tag_end`
 - no side event is promoted
 - why/how are separated

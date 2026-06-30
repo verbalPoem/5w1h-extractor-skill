@@ -26,7 +26,7 @@ Suggested labels:
 - over-split
 - missed
 
-### Role F1
+### Node-Type F1
 
 Compute precision, recall, and F1 for `who`, `what`, `when`, `where`, `why`, and `how`.
 
@@ -68,7 +68,7 @@ Run the same inputs across multiple LLMs or temperatures.
 Report:
 
 - center event agreement
-- role agreement
+- node-type agreement
 - hyperedge predicate agreement
 - invalid JSON rate
 
