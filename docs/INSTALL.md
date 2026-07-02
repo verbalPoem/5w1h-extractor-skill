@@ -5,21 +5,19 @@
 ## 方式一：手动安装
 
 1. 下载或 clone 本仓库。
-2. 找到仓库中的 `5w1h-extractor/` 或 `ceh-5w1h/` 文件夹。
-3. 将需要的 skill 文件夹复制到 Codex 的 skills 目录。
+2. 找到仓库中的 `5w1h-extractor/` 文件夹。
+3. 将该文件夹复制到 Codex 的 skills 目录。
 
 Windows PowerShell：
 
 ```powershell
 Copy-Item -Recurse .\5w1h-extractor "$env:USERPROFILE\.codex\skills\"
-Copy-Item -Recurse .\ceh-5w1h "$env:USERPROFILE\.codex\skills\"
 ```
 
 macOS / Linux：
 
 ```bash
 cp -R ./5w1h-extractor ~/.codex/skills/
-cp -R ./ceh-5w1h ~/.codex/skills/
 ```
 
 4. 新开一个 Codex 线程。
@@ -27,13 +25,6 @@ cp -R ./ceh-5w1h ~/.codex/skills/
 
 ```text
 $5w1h-extractor 抽取下面文本的事件 5W1H 知识超图：
-...
-```
-
-事件簇版：
-
-```text
-$ceh-5w1h 把下面文本抽成事件簇 5W1H 知识超图：
 ...
 ```
 
@@ -47,7 +38,7 @@ prompts/install-with-ai.zh.md
 
 把里面的提示词发给 AI。AI 应该完成：
 
-1. 定位本仓库中的 `5w1h-extractor/` 和/或 `ceh-5w1h/` 文件夹。
+1. 定位本仓库中的 `5w1h-extractor/` 文件夹。
 2. 复制到当前用户的 `.codex/skills/` 目录。
 3. 检查 `SKILL.md` 是否存在。
 4. 提示你新开线程使用 `$5w1h-extractor`。
@@ -60,17 +51,15 @@ Windows：
 
 ```text
 C:\Users\你的用户名\.codex\skills\5w1h-extractor\SKILL.md
-C:\Users\你的用户名\.codex\skills\ceh-5w1h\SKILL.md
 ```
 
 macOS / Linux：
 
 ```text
 ~/.codex/skills/5w1h-extractor/SKILL.md
-~/.codex/skills/ceh-5w1h/SKILL.md
 ```
 
-如果新线程里能识别 `$5w1h-extractor` 或 `$ceh-5w1h`，说明安装成功。
+如果新线程里能识别 `$5w1h-extractor`，说明安装成功。
 
 ## 验证输出格式
 
@@ -78,12 +67,10 @@ macOS / Linux：
 
 ```bash
 python 5w1h-extractor/scripts/validate_output.py examples/minimal-output.json
-python ceh-5w1h/scripts/validate_ceh_output.py examples/ceh-minimal-output.json
 ```
 
 期望结果：
 
 ```text
-VALID: 1 sentence(s), 3 node(s), 1 hyperedge(s)
-VALID: 1 cluster(s), 2 event(s), 2 event hyperedge(s), 1 relation hyperedge(s)
+VALID: 2 node(s), 1 hyperedge(s)
 ```
