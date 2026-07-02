@@ -2,13 +2,20 @@
 
 语言：中文 | [English](README.en.md)
 
-这是一个面向 Codex 的 5W1H 抽取 skill，用于从新闻、军事报道、政策文本、事故通报和技术报告中抽取**以事件为超边、以 5W1H 为节点**的知识超图结构。
+这是一个面向 Codex 的 5W1H 与事件知识超图抽取 skill 仓库，用于从新闻、军事报道、政策文本、事故通报和技术报告中抽取**以事件为超边、以 5W1H 为节点**的结构化知识。
+
+仓库现在包含两个可安装 skill：
+
+- `5w1h-extractor`：单中心事件 5W1H 超图抽取。
+- `ceh-5w1h`：Clustered Event Hypergraph for 5W1H Extraction，先抽事件簇，再抽事件 5W1H，并建模事件间关系。
 
 核心思想：
 
 ```text
-一个中心事件 = 一条超边
-Who / What / When / Where / Why / How = 这条超边连接的节点
+一个中心事件 = 一条事件超边
+多个相关事件 = 一个事件簇
+Who / What / When / Where / Why / How = 事件超边连接的节点
+事件之间 = relation_hyperedges
 S1 / S2 = 证据句编号
 N1 / N2 = 5W1H 节点编号
 ```
@@ -21,6 +28,20 @@ N1 / N2 = 5W1H 节点编号
   "sentences": {},
   "nodes": {},
   "hyperedges": []
+}
+```
+
+事件簇版输出：
+
+```json
+{
+  "schema_version": "ceh-5w1h-v1",
+  "sentences": {},
+  "nodes": {},
+  "events": {},
+  "event_hyperedges": {},
+  "relation_hyperedges": {},
+  "event_clusters": {}
 }
 ```
 
@@ -37,13 +58,19 @@ N1 / N2 = 5W1H 节点编号
 
 ```text
 .
-|-- 5w1h-extractor/          # 可安装的 Codex skill
+|-- 5w1h-extractor/          # 单中心事件 5W1H skill
+|   |-- SKILL.md
+|   |-- agents/
+|   |-- references/
+|   `-- scripts/
+|-- ceh-5w1h/                # 事件簇 5W1H 知识超图 skill
 |   |-- SKILL.md
 |   |-- agents/
 |   |-- references/
 |   `-- scripts/
 |-- examples/
-|   `-- minimal-output.json
+|   |-- minimal-output.json
+|   `-- ceh-minimal-output.json
 |-- prompts/
 |   |-- install-with-ai.zh.md
 |   `-- install-with-ai.en.md
@@ -55,7 +82,7 @@ N1 / N2 = 5W1H 节点编号
 `-- LICENSE
 ```
 
-真正需要安装的是 `5w1h-extractor/` 文件夹。
+真正需要安装的是 `5w1h-extractor/` 或 `ceh-5w1h/` 文件夹。普通中心事件抽取用前者，多事件簇知识超图抽取用后者。
 
 ## 快速安装
 
@@ -63,18 +90,27 @@ Windows PowerShell：
 
 ```powershell
 Copy-Item -Recurse .\5w1h-extractor "$env:USERPROFILE\.codex\skills\"
+Copy-Item -Recurse .\ceh-5w1h "$env:USERPROFILE\.codex\skills\"
 ```
 
 macOS / Linux：
 
 ```bash
 cp -R ./5w1h-extractor ~/.codex/skills/
+cp -R ./ceh-5w1h ~/.codex/skills/
 ```
 
 然后新开一个 Codex 线程，输入：
 
 ```text
 $5w1h-extractor 抽取下面文本的事件 5W1H 知识超图：
+...
+```
+
+事件簇版：
+
+```text
+$ceh-5w1h 把下面文本抽成事件簇 5W1H 知识超图，并画 Mermaid 图：
 ...
 ```
 
@@ -87,6 +123,7 @@ $5w1h-extractor 抽取下面文本的事件 5W1H 知识超图：
 [prompts/install-with-ai.zh.md](prompts/install-with-ai.zh.md)
 
 AI 会把 `5w1h-extractor/` 放到你的 `.codex/skills/` 目录，并检查 `SKILL.md` 是否存在。
+如需事件簇版本，也让 AI 同时安装 `ceh-5w1h/`。
 
 ## 输出结构示例
 
@@ -150,20 +187,23 @@ AI 会把 `5w1h-extractor/` 放到你的 `.codex/skills/` 目录，并检查 `SK
 
 ```bash
 python 5w1h-extractor/scripts/validate_output.py examples/minimal-output.json
+python ceh-5w1h/scripts/validate_ceh_output.py examples/ceh-minimal-output.json
 ```
 
 期望输出：
 
 ```text
 VALID: 1 sentence(s), 3 node(s), 1 hyperedge(s)
+VALID: 1 cluster(s), 2 event(s), 2 event hyperedge(s), 1 relation hyperedge(s)
 ```
 
 ## 方法定位
 
-这个 skill 不是普通的 5W1H 标签器，而是一个事件中心的知识超图构建器：
+这个仓库不是普通的 5W1H 标签器，而是事件中心与事件簇中心的知识超图构建器：
 
 ```text
 Text -> Center Event -> 5W1H Nodes -> Event Hyperedge -> Knowledge Hypergraph
+Text -> Event Clusters -> Events -> 5W1H Event Hyperedges -> Relation Hyperedges
 ```
 
 适合用于：

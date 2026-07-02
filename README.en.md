@@ -2,13 +2,20 @@
 
 Language: [中文](README.md) | English
 
-This repository contains a Codex skill for extracting **event-centric 5W1H knowledge hypergraphs** from news, military reports, policy text, incident briefings, and technical reports.
+This repository contains Codex skills for extracting **event-centric and clustered-event 5W1H knowledge hypergraphs** from news, military reports, policy text, incident briefings, and technical reports.
+
+It currently includes two installable skills:
+
+- `5w1h-extractor`: single center-event 5W1H hypergraph extraction.
+- `ceh-5w1h`: Clustered Event Hypergraph for 5W1H Extraction, with event clusters, event-level 5W1H hyperedges, and event-to-event relation hyperedges.
 
 Core idea:
 
 ```text
-one center event = one hyperedge
-Who / What / When / Where / Why / How = nodes connected by that hyperedge
+one center event = one event hyperedge
+related events = one event cluster
+Who / What / When / Where / Why / How = nodes connected by event hyperedges
+event-to-event links = relation_hyperedges
 S1 / S2 = evidence sentence IDs
 N1 / N2 = 5W1H node IDs
 ```
@@ -21,6 +28,20 @@ Default output:
   "sentences": {},
   "nodes": {},
   "hyperedges": []
+}
+```
+
+Clustered-event output:
+
+```json
+{
+  "schema_version": "ceh-5w1h-v1",
+  "sentences": {},
+  "nodes": {},
+  "events": {},
+  "event_hyperedges": {},
+  "relation_hyperedges": {},
+  "event_clusters": {}
 }
 ```
 
@@ -37,13 +58,19 @@ Default output:
 
 ```text
 .
-|-- 5w1h-extractor/          # installable Codex skill
+|-- 5w1h-extractor/          # single center-event 5W1H skill
+|   |-- SKILL.md
+|   |-- agents/
+|   |-- references/
+|   `-- scripts/
+|-- ceh-5w1h/                # clustered event 5W1H hypergraph skill
 |   |-- SKILL.md
 |   |-- agents/
 |   |-- references/
 |   `-- scripts/
 |-- examples/
-|   `-- minimal-output.json
+|   |-- minimal-output.json
+|   `-- ceh-minimal-output.json
 |-- prompts/
 |   |-- install-with-ai.zh.md
 |   `-- install-with-ai.en.md
@@ -55,7 +82,7 @@ Default output:
 `-- LICENSE
 ```
 
-The installable skill is the `5w1h-extractor/` folder.
+Install `5w1h-extractor/` for single-event extraction, or `ceh-5w1h/` for clustered event hypergraph extraction.
 
 ## Quick Install
 
@@ -63,18 +90,27 @@ Windows PowerShell:
 
 ```powershell
 Copy-Item -Recurse .\5w1h-extractor "$env:USERPROFILE\.codex\skills\"
+Copy-Item -Recurse .\ceh-5w1h "$env:USERPROFILE\.codex\skills\"
 ```
 
 macOS / Linux:
 
 ```bash
 cp -R ./5w1h-extractor ~/.codex/skills/
+cp -R ./ceh-5w1h ~/.codex/skills/
 ```
 
 Then start a new Codex thread and invoke:
 
 ```text
 $5w1h-extractor extract the event 5W1H knowledge hypergraph from the following text:
+...
+```
+
+Clustered-event skill:
+
+```text
+$ceh-5w1h extract clustered event 5W1H hypergraphs from the following text and draw a Mermaid diagram:
 ...
 ```
 
@@ -148,12 +184,14 @@ Event hyperedge:
 
 ```bash
 python 5w1h-extractor/scripts/validate_output.py examples/minimal-output.json
+python ceh-5w1h/scripts/validate_ceh_output.py examples/ceh-minimal-output.json
 ```
 
 Expected:
 
 ```text
 VALID: 1 sentence(s), 3 node(s), 1 hyperedge(s)
+VALID: 1 cluster(s), 2 event(s), 2 event hyperedge(s), 1 relation hyperedge(s)
 ```
 
 ## License
